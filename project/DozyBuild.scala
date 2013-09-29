@@ -10,8 +10,14 @@ object Settings {
         scalaVersion := scalaCompilerVersion
     )
 
+    val Resolvers = Seq (
+        "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+        "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
+    )
+
     lazy val defaultSettings = Defaults.defaultSettings ++ 
         coreSettings ++ Seq(
+            resolvers ++= Resolvers,
             scalacOptions in Compile ++= Seq(
                 "-encoding", "UTF-8",
                 "-target:jvm-1.7",
@@ -27,11 +33,7 @@ object Dependencies {
     val jettyVersion = "9.0.5.v20130815"
     val slf4jVersion = "1.7.1"
     val logbackVersion = "1.0.1"
-
-    val Resolvers = Seq (
-        "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-        "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
-    )
+    val springVersion = "3.2.4.RELEASE"
 
     val Specs = Seq(
         "org.specs2" %% "specs2" % "2.2.2" % "test",
@@ -60,6 +62,10 @@ object Dependencies {
         "ch.qos.logback" % "logback-core" % logbackVersion % scope
     )
 
+    val Spring = Seq(
+      "org.springframework" % "spring-context" % springVersion
+    )
+
     val ScalaCore = Seq(
       "org.scala-lang" % "scala-reflect" % Settings.scalaCompilerVersion
     )
@@ -71,7 +77,7 @@ object DozyBuild extends Build {
     lazy val root = Project(
         id = "dozy",
         base = file("."),
-        aggregate = Seq(core, example),
+        aggregate = Seq(core, spring, example),
         settings = Settings.defaultSettings
     )
 
@@ -79,10 +85,23 @@ object DozyBuild extends Build {
         id = "dozy-core",
         base = file("core"),
         settings = Settings.defaultSettings ++ Seq(
-            resolvers ++= Dependencies.Resolvers,
             libraryDependencies ++= Dependencies.Core ++ 
                 Dependencies.LoggingImpl("test") ++
                 Dependencies.Servlet
+        )
+    )
+
+    lazy val spring = Project(
+        id = "dozy-spring",
+        base = file("spring"),
+        dependencies = Seq(
+            core % "compile"
+        ),
+        settings = Settings.defaultSettings ++
+            Seq(
+                libraryDependencies ++= Dependencies.Core ++ 
+                    Dependencies.LoggingImpl() ++
+                    Dependencies.Spring
         )
     )
 
@@ -94,7 +113,6 @@ object DozyBuild extends Build {
         ),
         settings = Settings.defaultSettings ++
             com.earldouglas.xsbtwebplugin.WebPlugin.webSettings ++ Seq(
-                resolvers ++= Dependencies.Resolvers,
                 libraryDependencies ++= Dependencies.Core ++ 
                     Dependencies.LoggingImpl() ++ 
                     Dependencies.Jetty
