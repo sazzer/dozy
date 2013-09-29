@@ -2,10 +2,12 @@ import sbt._
 import sbt.Keys._
 
 object Settings {
+    val scalaCompilerVersion = "2.10.2"
+
     lazy val coreSettings = Seq(
         organization := "uk.co.grahamcox.dozy",
         version := "0.1-SNAPSHOT",
-        scalaVersion := "2.10.2"
+        scalaVersion := scalaCompilerVersion
     )
 
     lazy val defaultSettings = Defaults.defaultSettings ++ 
@@ -58,7 +60,11 @@ object Dependencies {
         "ch.qos.logback" % "logback-core" % logbackVersion % scope
     )
 
-    val Core = Logging ++ Specs
+    val ScalaCore = Seq(
+      "org.scala-lang" % "scala-reflect" % Settings.scalaCompilerVersion
+    )
+
+    val Core = ScalaCore ++ Logging ++ Specs
 }
 
 object DozyBuild extends Build {
