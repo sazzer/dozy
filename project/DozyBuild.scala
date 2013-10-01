@@ -23,7 +23,8 @@ object Settings {
                 "-target:jvm-1.7",
                 "-deprecation",
                 "-feature",
-                "-unchecked"
+                "-unchecked",
+                "-Xfatal-warnings"
             )
         ) ++
         net.virtualvoid.sbt.graph.Plugin.graphSettings
