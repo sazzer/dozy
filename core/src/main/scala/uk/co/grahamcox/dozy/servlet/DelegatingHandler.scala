@@ -12,5 +12,14 @@ class DelegatingHandler extends Handler {
   def handle(req: Request): Response = {
     Response(404, Some("No handler found"), payload = Some("No handler could be found"))
   }
+
+  /**
+   * Determine if this handler is capable of handling the given request
+   * @param req The request to check
+   * @return True if we can handle the request. False if not
+   */
+  def canHandle(req: Request): Boolean = {
+    false
+  }
 }
 

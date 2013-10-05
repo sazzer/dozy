@@ -10,4 +10,11 @@ trait Handler {
    * @return the response from handling the request
    */
   def handle(req: Request): Response;
+
+  /**
+   * Determine if this handler is capable of handling the given request
+   * @param req The request to check
+   * @return True if we can handle the request. False if not
+   */
+  def canHandle(req: Request): Boolean;
 }

@@ -27,10 +27,12 @@ class DozyServlet extends HttpServlet {
     logger.debug(s"Handling request: ${request.getMethod} ${request.getURL}")
     logger.debug(s"Parameters: ${request.getParams}")
     logger.debug(s"Headers: ${request.getHeaders}")
-    val response = handler.map {
-      a => a.handle(request)
-    }.getOrElse(Response(404))
 
+    val response = handler filter {
+      h => h.canHandle(request)
+    } map {
+      h => h.handle(request)
+    } getOrElse(Response(404))
     logger.debug(s"Response: $response")
 
     // Handle setting the headers

@@ -17,6 +17,13 @@ class DefaultHeadersHandler(handler: Handler) extends Handler {
     val inner = handler.handle(req)
     Response(inner.statusCode, inner.message, defaultHeaders ++ inner.headers, inner.payload)
   }
+
+  /**
+   * Determine if this handler is capable of handling the given request
+   * @param req The request to check
+   * @return True if we can handle the request. False if not
+   */
+  def canHandle(req: Request): Boolean = handler.canHandle(req)
 }
 
 
