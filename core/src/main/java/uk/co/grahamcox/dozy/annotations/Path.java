@@ -7,6 +7,7 @@ import java.lang.annotation.*;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
+@Handler
 public @interface Path {
   /** The actual path value to use */
   String value();
