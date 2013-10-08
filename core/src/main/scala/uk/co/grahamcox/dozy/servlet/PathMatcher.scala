@@ -7,18 +7,33 @@ import scala.util.matching.Regex
  * Base class to represent the result of matching a path
  */
 sealed abstract class PathMatch {
+  /**
+   * Determine whether this was a match or not
+   * @return True if this was a match. False if not
+   */
+  def matches: Boolean
 }
 
 /**
  * Implementation of the PathMatch to represent when the path actually did match
  */
 final case class PathMatched(parts: Map[String, String]) extends PathMatch {
+  /**
+   * Determine whether this was a match or not
+   * @return True
+   */
+  def matches: Boolean = true
 }
 
 /**
  * Implementation of the PathMatch to represent when the path didn't match
  */
 final case class PathUnmatched() extends PathMatch {
+  /**
+   * Determine whether this was a match or not
+   * @return False
+   */
+  def matches: Boolean = false
 }
 /**
  * Helper to try and match an actual path to a template
