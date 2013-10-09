@@ -22,9 +22,28 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
     /**
      * Actually build the parameter value
      * @param req The request to build the parameter from
+     * @param pathMatch The details of parsing the path
      * @return the parameter value
      */
-    def build(req: Request): AnyRef
+    def build(req: Request, pathMatch: PathMatch): Option[AnyRef]
+  }
+
+  /**
+   * Extract a path parameter from the URL as a parameter
+   */
+  class PathParamBuilder(param: String) extends ParameterBuilder {
+    /**
+     * Actually build the parameter value
+     * @param req The request to build the parameter from
+     * @param pathMatch The details of parsing the path
+     * @return the parameter value
+     */
+    def build(req: Request, pathMatch: PathMatch): Option[AnyRef] = {
+      pathMatch match {
+        case PathMatched(parts) => parts.get(param)
+        case PathUnmatched() => None
+      }
+    }
   }
 
   /** The HTTP Method to use */
@@ -34,11 +53,18 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
   /** The collection of parameter builders to use */
   private val parameterBuilders = method.getParameterTypes.toSeq.zip(method.getParameterAnnotations.toSeq) map {
     case (t, a) => {
-      None
+      val annotations: Map[Class[_], Annotation] = Map((a map {
+        a => (a.annotationType -> a)
+      }) : _*)
+
+      annotations.get(classOf[PathParam]) match {
+        case Some(pathParam: PathParam) => Some(new PathParamBuilder(pathParam.value))
+        case _ => None
+      }
     }
   }
 
-  logger.debug(s"Method: $httpMethod, Path: $httpPath")
+  logger.debug(s"Method: $httpMethod, Path: $httpPath, Parameter Builders: $parameterBuilders")
   /**
    * Handle the request provided
    * @param req The request to handle
@@ -46,6 +72,7 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
    */
   def handle(req: Request): Response = {
     val args = buildParameters(req)
+    logger.debug(s"About to invoke method $method with arguments $args build from $parameterBuilders")
     try {
       val output = try {
         method.invoke(bean, args : _*)
@@ -84,12 +111,18 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
    * @return the array of parameters
    */
   private def buildParameters(req: Request): Seq[AnyRef] = {
-    (parameterBuilders.map {
+    val pathMatch = httpPath.matchPath(req.getURL)
+    parameterBuilders.map {
       pb: Option[ParameterBuilder] => pb match {
-        case Some(pb) => pb.build(req)
+        case Some(pb) => {
+          pb.build(req, pathMatch) match {
+            case Some(a) => a
+            case None => null
+          }
+        }
         case None => null
       }
-    })
+    }
   }
 
   /**

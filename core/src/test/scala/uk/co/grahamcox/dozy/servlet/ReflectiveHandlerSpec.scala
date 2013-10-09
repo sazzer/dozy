@@ -15,6 +15,7 @@ class ReflectiveHandlerSpec extends Specification with Mockito {
       }
       val method = classOf[Handler].getMethod("handle")
       val request = mock[Request]
+      request.getURL returns "/"
 
       "that returns a Response object" in {
         val handler = mock[Handler]
@@ -46,14 +47,15 @@ class ReflectiveHandlerSpec extends Specification with Mockito {
         there was one(handler).handle()
       }
     }
-    "when executing an unannotated args method" in {
-      abstract class Handler {
-        def handle(a: String): Any
-      }
-      val method = classOf[Handler].getMethod("handle", classOf[String])
-      val request = mock[Request]
+    "when executing a method with arguments" in {
+      "that don't have annotations" in {
+        abstract class Handler {
+          def handle(a: String): Any
+        }
+        val method = classOf[Handler].getMethod("handle", classOf[String])
+        val request = mock[Request]
+        request.getURL returns "/"
 
-      "that returns a Response object" in {
         val handler = mock[Handler]
         val reflectiveHandler = new ReflectiveHandler(handler, method)
         handler.handle(null) returns Response(300)
@@ -62,6 +64,24 @@ class ReflectiveHandlerSpec extends Specification with Mockito {
         response.statusCode must beEqualTo(300)
         response.payload must beNone
         there was one(handler).handle(null)
+      }
+      "that has the PathParam annotation" in {
+        abstract class Handler {
+          @Path("/:p")
+          def handle(@PathParam("p") a: String): Any
+        }
+        val method = classOf[Handler].getMethod("handle", classOf[String])
+        val request = mock[Request]
+        request.getURL returns "/hello"
+
+        val handler = mock[Handler]
+        val reflectiveHandler = new ReflectiveHandler(handler, method)
+        handler.handle("hello") returns Response(301)
+        val response = reflectiveHandler.handle(request)
+        response must beAnInstanceOf[Response]
+        response.statusCode must beEqualTo(301)
+        response.payload must beNone
+        there was one(handler).handle("hello")
       }
     }
   }
