@@ -46,6 +46,24 @@ class ReflectiveHandlerSpec extends Specification with Mockito {
         there was one(handler).handle()
       }
     }
+    "when executing an unannotated args method" in {
+      abstract class Handler {
+        def handle(a: String): Any
+      }
+      val method = classOf[Handler].getMethod("handle", classOf[String])
+      val request = mock[Request]
+
+      "that returns a Response object" in {
+        val handler = mock[Handler]
+        val reflectiveHandler = new ReflectiveHandler(handler, method)
+        handler.handle(null) returns Response(300)
+        val response = reflectiveHandler.handle(request)
+        response must beAnInstanceOf[Response]
+        response.statusCode must beEqualTo(300)
+        response.payload must beNone
+        there was one(handler).handle(null)
+      }
+    }
   }
 
   "The builder" should {

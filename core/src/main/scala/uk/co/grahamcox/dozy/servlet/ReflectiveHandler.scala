@@ -15,10 +15,28 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
   /** The logger to use */
   private val logger = Logger[this.type]
   
+  /**
+   * Trait that represents how to build a parameter value
+   */
+  trait ParameterBuilder {
+    /**
+     * Actually build the parameter value
+     * @param req The request to build the parameter from
+     * @return the parameter value
+     */
+    def build(req: Request): AnyRef
+  }
+
   /** The HTTP Method to use */
   private val httpMethod = getAnnotation[HttpMethod] map { a => a.value } getOrElse("GET")
   /** The HTTP Path to use */
   private val httpPath = new PathMatcher(getAnnotations[Path] map { a => a.value } map { a => a.stripPrefix("/") } mkString("/", "/", ""))
+  /** The collection of parameter builders to use */
+  private val parameterBuilders = method.getParameterTypes.toSeq.zip(method.getParameterAnnotations.toSeq) map {
+    case (t, a) => {
+      None
+    }
+  }
 
   logger.debug(s"Method: $httpMethod, Path: $httpPath")
   /**
@@ -65,7 +83,14 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
    * @param req The request to build the parameters from
    * @return the array of parameters
    */
-  private def buildParameters(req: Request): Array[_ <: Object] = Nil.toArray
+  private def buildParameters(req: Request): Seq[AnyRef] = {
+    (parameterBuilders.map {
+      pb: Option[ParameterBuilder] => pb match {
+        case Some(pb) => pb.build(req)
+        case None => null
+      }
+    })
+  }
 
   /**
    * Helper to get the requested annotation from the method we are working on
