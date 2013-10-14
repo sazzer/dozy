@@ -46,6 +46,21 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
     }
   }
 
+  /**
+   * Extract a path parameter from the URL as a parameter
+   */
+  class RequestParamBuilder(param: String) extends ParameterBuilder {
+    /**
+     * Actually build the parameter value
+     * @param req The request to build the parameter from
+     * @param pathMatch The details of parsing the path
+     * @return the parameter value
+     */
+    def build(req: Request, pathMatch: PathMatch): Option[AnyRef] = {
+      req.getParam(param)
+    }
+  }
+
   /** The HTTP Method to use */
   private val httpMethod = getAnnotation[HttpMethod] map { a => a.value } getOrElse("GET")
   /** The HTTP Path to use */
@@ -59,7 +74,12 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
 
       annotations.get(classOf[PathParam]) match {
         case Some(pathParam: PathParam) => Some(new PathParamBuilder(pathParam.value))
-        case _ => None
+        case _ => {
+          annotations.get(classOf[RequestParam]) match {
+            case Some(requestParam: RequestParam) => Some(new RequestParamBuilder(requestParam.value))
+            case _ => None
+          }
+        }
       }
     }
   }
@@ -74,18 +94,19 @@ class ReflectiveHandler(bean: Any, method: Method) extends Handler {
     val args = buildParameters(req)
     logger.debug(s"About to invoke method $method with arguments $args build from $parameterBuilders")
     try {
-      val output = try {
+      val output = Option(try {
         method.invoke(bean, args : _*)
       }
       catch {
         case e: InvocationTargetException => throw e.getCause()
         case e: Exception => throw e
-      }
+      })
 
       logger.debug(s"Method $method responded with $output")
       output match {
-        case r: Response => r
-        case r: Any => Response(payload = Some(r))
+        case Some(r: Response) => r
+        case Some(r: Any) => Response(payload = Some(r))
+        case None => Response()
       }
     }
     catch {

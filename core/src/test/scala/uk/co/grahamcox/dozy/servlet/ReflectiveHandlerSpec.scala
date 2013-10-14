@@ -83,6 +83,24 @@ class ReflectiveHandlerSpec extends Specification with Mockito {
         response.payload must beNone
         there was one(handler).handle("hello")
       }
+      "that has the RequestParam annotation" in {
+        abstract class Handler {
+          def handle(@RequestParam("p") a: String): Any
+        }
+        val method = classOf[Handler].getMethod("handle", classOf[String])
+        val request = mock[Request]
+        request.getURL returns "/hello"
+        request.getParam("p") returns Some("world")
+
+        val handler = mock[Handler]
+        val reflectiveHandler = new ReflectiveHandler(handler, method)
+        handler.handle("world") returns Response(301)
+        val response = reflectiveHandler.handle(request)
+        response must beAnInstanceOf[Response]
+        response.statusCode must beEqualTo(301)
+        response.payload must beNone
+        there was one(handler).handle("world")
+      }
     }
   }
 
